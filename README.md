@@ -101,7 +101,11 @@ $ nvidia-smi
 ##### 0.3：CUDA10.0のインストール
 
 - CUDA toolkit 10.0をインストールします。5GB程度をインストールするため、十分なネットワーク環境とディスク容量を確保することをお勧めします。
-- https://developer.nvidia.com/cuda-10.0-download-archiveより、Lunux→x86_64→Ubuntu→18.04→deb[network)]を選択。
+
+- https://developer.nvidia.com/cuda-10.0-download-archive
+
+  より、Lunux→x86_64→Ubuntu→18.04→deb[network)]を選択。
+
 - Base Installer(2.9KB)をインストール
 ```bash
 $ sudo dpkg -i cuda-repo-ubuntu1804_10.0.130-1_amd64.deb`
