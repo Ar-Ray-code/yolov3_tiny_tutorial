@@ -1,6 +1,10 @@
 # YOLOv3-tinyでお手軽物体検出
 
+作成者：DaichiArai
 
+作成日：2021/01/19
+
+本資料で使用したデータ：https://github.com/DaichiArai/yolov3_tiny_tutorial
 
 ## 全体の流れ
 
@@ -20,7 +24,7 @@
 
 #### [ハードウェア]
 
-- CPU：Ryzen7 2700x @3.7GHz 16 thread
+- CPU：Ryzen7 2700x @3.7GHz 16 threads
 - GPU：RTX2080Ti 11GB VRAM
 - RAM：16GB DDR4
 - Power：SUPER FLOWER LEADEXⅢGOLD 850W
@@ -94,7 +98,24 @@ $ nvidia-smi
 
 - nvidia-smiのコマンドで次のような画面が出れば成功です。（???は数字が入ります）
 
-##### 0.3：ROS-Melodicのインストール
+##### 0.3：CUDA10.0のインストール
+
+- CUDA toolkit 10.0をインストールします。5GB程度をインストールするため、十分なネットワーク環境とディスク容量を確保することをお勧めします。
+- https://developer.nvidia.com/cuda-10.0-download-archiveより、Lunux→x86_64→Ubuntu→18.04→deb[network)]を選択。
+- Base Installer(2.9KB)をインストール
+```bash
+$ sudo dpkg -i cuda-repo-ubuntu1804_10.0.130-1_amd64.deb`
+$ sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+$ sudo apt-get update
+$ sudo apt-get install cuda-10-0 cuda-toolkit-10-0
+$ sudo reboot
+```
+
+cuDNNのインストールはこちらから（オプション）。https://developer.nvidia.com/CUDNN
+
+　cuDNNはディープニューラルネットワーク専用のライブラリで、機械学習の学習・検出速度を飛躍的に向上させます。darknetも対応しています。
+
+##### 0.4：ROS-Melodicのインストール
 
 - ROS-Melodicをインストールしなくてもいいですが、ROS-MelodicをインストールするとROSを使用できるほか、OpenCV3.2を最も簡単にインストールできるため，お勧めのインストール方法です。
 
@@ -106,7 +127,7 @@ $ sudo apt install ros-melodic-desktop && sudo apt install ros-melodic-vision-op
 $ echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
 ```
 
-#### 0.4：darknetの導入
+##### 0.5：darknetの導入
 
 　Darknetは2種類あります。AlexeyABのほうが現在最新となっており使い勝手がよくお勧めです。この時点では、pjreddieの実装を使用しています。使用方法はほとんど同じです。pjreddieで通るコマンドはAlexeyABでも通ります。
 
@@ -115,14 +136,14 @@ $ echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
 
 　ダウンロードとコンパイルを行います。
 
-```bash
+``` bash
 $ sudo apt install git
 $ git clone https://github.com/pjreddie/darknet.git
 $ cd darknet
 $ vim Makefile
 ## 次の項目を変更
 > 1行目(CUDA10の導入が必要)
->  GPU=0をGPU1に変更
+>  GPU=0をGPU=1に変更
 > 2・3行目（高速化の場合、cudnnを導入すること）
 >　CUDNN=0をCUDNN=1，CUDNN_HALF=0をCUDNN_HALF=1に変更
 > 4行目(ビデオ入力を行う場合必須)
@@ -135,9 +156,9 @@ $ make
 
 　darknet（拡張子なし）というファイルが生成されれば、成功。
 
-#### 1．画像の撮影
+## 1．画像の撮影
 
- 　質のよい大きな画像を多く撮影します。この工程によって検出精度が大きく変わります。今回は、ボルト・ナット・ワッシャー・スプリングワッシャーを検出するため、それが含まれる画像を撮影します。今回は、簡単のために6枚撮影してそれを分割します。目安では、最低1000枚、理想は1万枚程度必要と言われています。
+ 　質のよい大きな画像を多く撮影します。この工程によって検出精度が大きく変わります。今回は、ボルト・ナット・ワッシャー・スプリングワッシャーを検出するため、それが含まれる画像を撮影します。今回は、簡単のために6枚撮影してそれを分割します。画像収集の目安は、最低1000枚、理想は1万枚程度と言われています。
 
 ![使用したデータセット](C:image/data1.png)
 
@@ -149,7 +170,7 @@ $ make
 
 ![俯瞰](image/data3.png)
 
-#### 2．アノテーション
+## 2．アノテーション
 
 　様々なツールがあります。好きなものを選びましょう。私は、[Yolo_Label](https://github.com/developer0hye/Yolo_Label)を使用します。かなり面倒なので、頑張りましょう。
 
@@ -173,7 +194,7 @@ $ vim label_name.txt
 
 
 
-#### 3．水増し
+## 3．水増し
 
 　アノテーション工程が終われば、おそらくデータセットフォルダには画像とテキストファイルのネットが画像枚数分だけあります。紐づけされている画像とテキストファイルの名称は一致しているはずです。
 
@@ -197,7 +218,7 @@ $ python3 yolo_augmentation.py -p ../dataset_folder -f jpg
 
 　このプログラムでは24倍の水増しを行います。つまり、jpgファイルとtxtファイルが24倍になりました。60x24=1440枚になったはずです。
 
-#### 4．設定ファイルの作成(1)：cfgファイルの作成
+## 4．設定ファイルの作成(1)：cfgファイルの作成
 
 　yolov3-tiny.cfgに代わるファイルを作成します。yolov3.cfgはdarknetディレクトリ下にあるcfg/にあります。yolov3-tiny.cfgをコピーして自分の設定用のフォルダ「config」内に貼り付けて編集します。
 
@@ -218,7 +239,7 @@ $ vim yolov3-tiny.cfg
 
 直接のダウンロードリンク→（https://pjreddie.com/media/files/darknet53.conv.74）
 
-#### 5．設定ファイルの作成(2)：パスを通す
+## 5．設定ファイルの作成(2)：パスを通す
 
 　学習を行うためには、学習用のデータパス集（text形式ファイル）とテスト用のデータパス集とそれらのファイルの場所を記述したファイルの4種類が必要となります。それらを手動で生成してもいいですが、自動で生成可能なスクリプトを作成しています。
 
@@ -234,7 +255,7 @@ $ sh generate_config.sh <設定ファイルを格納するフォルダ> <デー�
 
 ![data7](image/data7.png)
 
-#### 6．学習
+## 6．学習
 
 　ここまできたら、ようやく学習が可能になります。darknetのディレクトリ上で次のコマンドを実行します。＜※＞は、5で指定した設定フォルダを指します。絶対パスか相対パスで指定してください。
 
@@ -254,7 +275,7 @@ $ ./darknet detector train <※>/train_cfg.data <カスタム済yolov3-tiny.cfg�
 
 ![loss](image/loss.png)
 
-#### 7．検証
+## 7．検証
 
 　早速生成された重みを学習に使っていきましょう。実行は以下の通りです。
 
@@ -286,10 +307,18 @@ $ ./darknet detector demo <※>/train_cfg.data <カスタム済yolov3-tiny.cfg�
 
 ![webcam](image/webcam.gif)
 
-これも、誤検出・未検出が多発しています。動的な環境の場合は、様々な背景や影・重なりなども考慮して多くのデータを収集しておくとよいでしょう。
+　これも、誤検出・未検出が多発しています。動的な環境の場合は、様々な背景や影・重なりなども考慮して多くのデータを収集しておくとよいでしょう。
 
 　深層学習はニューラルネットワークが深くなるほどあいまいな認識になり汎用性が向上するので、精度の向上を目指すならyolov3-tinyよりもyolov3でトレーニングしたほうがいいと思います。
 
-
-
 　ぜひ挑戦してみてください。
+
+<br></br>
+
+[参考]
+
+- Nvidia driverのインストール（参考）：https://qiita.com/kawazu191128/items/8a46308be6949f5bda57
+- CUDAのインストール（参考）：https://qiita.com/yukoba/items/4733e8602fa4acabcc35
+
+- ROSのインストール（公式）：http://wiki.ros.org/melodic/Installation/Ubuntu
+- darknet（AlexeyAB）：https://github.com/AlexeyAB/darknet
