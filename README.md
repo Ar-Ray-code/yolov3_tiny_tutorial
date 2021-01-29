@@ -1,7 +1,5 @@
 # YOLOv3-tinyでお手軽物体検出
 
-作成者：DaichiArai
-
 作成日：2021/01/19
 
 本資料で使用したデータ：https://github.com/DaichiArai/yolov3_tiny_tutorial
